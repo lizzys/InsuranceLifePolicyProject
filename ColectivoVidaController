@@ -1,0 +1,853 @@
+using OfficeOpenXml;
+using OfficeOpenXml.Style;
+using System.Drawing;
+using SegurosLaFloresta.Models;
+using SegurosLaFloresta.ViewModels.ColectivoVida;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.UI.WebControls;
+using System.Security.Claims;
+using SegurosLaFloresta.Core.Seguridad;
+using SegurosLaFloresta.Core.Atributos;
+using SegurosLaFloresta.Core.Utils;
+using Newtonsoft.Json;
+using SegurosLaFloresta.Models.ColectivoVida;
+using System.IO;
+using System.Text;
+using ceTe.DynamicPDF;
+using ceTe.DynamicPDF.ReportWriter;
+using System.Configuration;
+using ceTe.DynamicPDF.PageElements;
+
+
+
+namespace SegurosLaFloresta.Controllers
+{
+
+    
+    public class ColectivoVidaController : Controller
+    {
+        // GET: ColectivoVida
+        private modeloBDDataContext db       = new modeloBDDataContext();
+        public  List<Recaudo>       listrec  = new List<Recaudo>();
+
+        private static float margin = 36;
+        // Height of the footer
+        private static float footerHeight = 14;
+        // Size of paper to use
+        private static PageDimensions pageSize = new PageDimensions(PageSize.Letter, PageOrientation.Portrait, 54.0f);
+        // Bottom Y coordinate for the body of the report
+        private static float bodyBottom = pageSize.Height - (margin * 2) - footerHeight;
+        // Used to control the alternating background
+        private bool alternateBG = false;
+
+
+        public void CargarDatosIniciales(ColectivoVida c)
+        {
+            DateTime fechahoy = DateTime.Today;
+            c.fecha           = fechahoy;
+            c.fecha2          = String.Format("{0:dddd, MMMM d, yyyy}", c.fecha);
+            c.listtipocredito = GetCreditoList();
+            c.listclinica     = GetClinicaList();
+            c.listtratamiento = GetTratamientoList();
+            c.listanio        = GetAnios();
+            c.listexamenes    = GetExamenList();
+            c.listTipoIdentificador = GetTipoIdentificadorList();
+        }
+
+        [LogMe]
+        [Permisologia("solicitudaprobacion")]
+        public ActionResult Poliza()
+        {
+            ColectivoVida c = new ColectivoVida();
+            CargarDatosIniciales(c);
+            return View(c);
+        }
+
+        [LogMe]
+        [HttpPost]
+        [Permisologia("solicitudaprobacion")]
+        public ActionResult Poliza(ColectivoVida c)
+        {
+            //Formulario incompleto, invalido o El usuario esta ya registrado
+            if ((!ModelState.IsValid) || (GetDatosBasicos2(c.cedula) != null))
+            {
+                CargarDatosIniciales(c);
+                return View("Poliza", c);
+            }
+
+            //Agregar datos del formulario
+            DateTime fecha = DateTime.Today;
+            int      p     = (int) c.peso;
+            double   est   = (double) c.estatura;
+            double   IMC   = (p * 0.453592) / (est * est);
+            int      IMC2  = (int) Math.Round(IMC, 0);
+            c.fecha2       = String.Format("{0:dddd, MMMM d, yyyy}", fecha);
+            COTT_TEST_VIDA   cott     = new COTT_TEST_VIDA();
+            cott.COTE_CD_NACIONALIDAD = c.tipoidentificador;
+            cott.COTE_NU_CEDULA_RIF   = c.cedula;
+            decimal montocreditoorig  = Convert.ToDecimal(c.montocredito);
+            cott.COTE_MT_CREDITO      = Math.Round(montocreditoorig, 2);
+            cott.COTE_FE_CREDITO      = fecha;
+            cott.COTE_TM_CREDITO      = c.anio.ToString();
+            cott.COTE_TP_CREDITO      = c.tipocredito;
+            c.tipocredito2            = NomCredito(c.tipocredito);
+            cott.COTE_NU_EDAD         = (int) c.edad;
+            cott.COTE_NU_PESO         = (int) c.peso;
+            cott.COTE_NU_ESTATURA     = Convert.ToDecimal(c.estatura);
+            cott.COTE_NU_IMC          = IMC2.ToString();
+
+            if (c.pregunta1.Equals(true))
+            {
+                cott.COTE_IN_ACCIDENTE = "S";
+                cott.COTE_DE_ACCIDENTE = c.detalle1.ToString();
+            }
+            else
+            {
+                cott.COTE_IN_ACCIDENTE = "N";
+            }
+
+            SelectList a = GetClinicaList();
+            SelectList b = GetTratamientoList();
+
+            string clinica     = null;
+            string tratamiento = null;
+
+            foreach (var item in a)
+            {
+                string valor = item.Value;
+                if (valor == c.clinica)
+                {
+                    clinica = item.Text;
+                }
+            }
+
+            foreach (var item in b)
+            {
+                string valor = item.Value;
+                if (valor == c.tratamiento)
+                {
+                    tratamiento = item.Text;
+                }
+            }
+
+            if (c.pregunta2.Equals(true))
+            {
+                cott.COTE_IN_ATENCION = "S";
+                cott.COTE_DE_ATENCION = clinica + " " + tratamiento;
+            }
+            else
+            {
+                cott.COTE_IN_ATENCION = "N";
+            }
+
+            SelectList d = GetExamenList();
+            string examen = null;
+
+            foreach (var item in d)
+            {
+                string valor = item.Value;
+                if (valor == c.examen)
+                {
+                    examen = item.Text;
+                }
+            }
+
+            if (c.pregunta3.Equals(true))
+            {
+                cott.COTE_IN_HOSPITAL = "S";
+                cott.COTE_DE_HOSPITAL = examen;
+            }
+            else
+            {
+                cott.COTE_IN_HOSPITAL = "N";
+            }
+
+
+            if (c.pregunta4.Equals(true))
+            {
+                cott.COTE_IN_EXAMENES = "S";
+                cott.COTE_DE_EXAMENES = c.detalle4.ToString();
+            }
+            else
+            {
+                cott.COTE_IN_EXAMENES = "N";
+            }
+
+
+
+            if (c.pregunta5.Equals(true))
+            {
+                cott.COTE_IN_TRANSFUSION = "S";
+                cott.COTE_DE_TRANSFUSION = c.detalle5.ToString();
+            }
+            else
+            {
+                cott.COTE_IN_TRANSFUSION = "N";
+            }
+
+
+
+            if (c.pregunta6.Equals(true))
+            {
+                cott.COTE_IN_PESO = "S";
+                cott.COTE_DE_PESO = c.detalle6.ToString();
+            }
+            else
+            {
+                cott.COTE_IN_PESO = "N";
+            }
+
+
+            if (c.pregunta7.Equals(true))
+            {
+                cott.COTE_IN_SANO = "S";
+            }
+            else
+            {
+                cott.COTE_IN_SANO = "N";
+            }
+            cott.COTE_DE_SANO = c.detalle7;
+
+
+            if (c.pregunta8.Equals(true))
+            {
+                cott.COTE_IN_OPERACION = "S";
+                cott.COTE_DE_OPERACION = c.detalle8.ToString();
+            }
+            else
+            {
+                cott.COTE_IN_OPERACION = "N";
+            }
+
+
+            //Aprobacion
+            bool respcuestionario;
+            if ((c.pregunta1.Equals(false)) && (c.pregunta2.Equals(false)) && (c.pregunta3.Equals(false))
+                && (c.pregunta4.Equals(false)) && (c.pregunta5.Equals(false)) && (c.pregunta6.Equals(false))
+                && (c.pregunta7.Equals(true)) && (c.pregunta8.Equals(false)))
+            {
+                respcuestionario = true;
+            }else
+            {
+                respcuestionario = false;
+            }
+
+            if (((IMC2 >= 24) && (IMC2 <= 27)) && (respcuestionario == true))
+            {
+                c.codaprobacion = 'A';
+                c.aprobacion    = "Aprobado";
+            }
+            else
+            {
+                c.codaprobacion = 'R';
+                c.aprobacion    = "Por Aprobar";
+            }
+            ViewBag.CodAprobacion = c.codaprobacion;
+            ViewBag.IMC           = IMC2;
+
+
+            //Recaudo
+            if (c.codaprobacion.Equals('A'))
+            {
+
+                double mc = (double) c.montocredito;
+                int    ed = (int)    c.edad;
+
+                Recaudo  r = GetRecaudos(mc,ed);
+                string   listrecaudos = r.recaudo;
+                List<Recaudo> listadorecaudo = new List<Recaudo>();
+
+                for (int e = 0; e < listrecaudos.Length; e++)
+                {
+                    string valor = listrecaudos.Substring(e, 1);
+                    c.listadorecaudo = GetListRecaudo(valor);
+                }
+                cott.COTE_CD_RECAUDO = listrecaudos;
+            }
+            else
+            {
+                cott.COTE_CD_RECAUDO = "";
+            }
+
+            cott.COTE_IN_APROBADO = c.codaprobacion.ToString();
+
+            //Agregar Nueva Poliza
+            db.COTT_TEST_VIDAs.InsertOnSubmit(cott);
+            try
+            {
+                c.estatura2 = string.Format("{0:0.00}", c.estatura); 
+                db.SubmitChanges();
+                string codserial = String.Format("{0,8:00000000}", int.Parse(GetDatosBasicos2(c.cedula)));
+                c.codigo = codserial;
+            }
+            catch (Exception e)
+            {
+                ViewBag.ErrorRegistro = "Usuario ya registrado";
+                return Redirect("Poliza");
+            }
+                
+            string mensaje;
+            if (c.codaprobacion.Equals('A'))
+            {
+                mensaje = "Su solicitud ha sido Aprobada Satisfactoriamente. Su número de IMC es: " + IMC2;
+            }
+            else
+            {
+                mensaje = "La solicitud requiere de la evaluación de nuestro departamento de riesgo, será contactado durante las próximas 48 horas hábiles";
+            }
+
+            ViewBag.Mensaje = mensaje;
+
+            //Enviar Correo Simple
+            mensaje      = SendMail.PrepararTemplate("Colectivo de Vida", mensaje);
+
+            //Enviar Correo Adjuntado
+            String nmReporte = "SolicitudPoliza.pdf";
+            string texto     = "Su solicitud ha sido Aprobada Satisfactoriamente. Su número de IMC es: " + c.aprobacion;
+            List<string> nmReporteArr = new List<string>();
+            List<string> correos      = new List<string>();
+            List<System.IO.Stream> archivos = new List<System.IO.Stream>();
+            correos.Add(c.correo);
+            nmReporteArr.Add(nmReporte);
+
+            Document   document = GenerarPDF(c);
+            FileStream fs       = new FileStream(Server.MapPath("/Content/files/SolicitudPoliza.pdf"), FileMode.Create);
+            fs.Write(document.Draw(), 0, document.Draw().Count());
+
+            List<System.IO.Stream> archivos2 = new List<System.IO.Stream>();
+            archivos2.Add(fs);
+
+            bool enviado = SendMail.Send("Solicitud de Colectivo de Vida", mensaje, correos, archivos2, nmReporteArr);
+            fs.Close();
+
+            System.IO.File.Delete(Server.MapPath("/Content/files/SolicitudPoliza.pdf"));
+
+            ViewBag.Correo = enviado;
+         
+            return View("Resultado", c);
+        }
+
+
+        public Document GenerarPDF(ColectivoVida c)
+        {
+            Document document  = new Document();
+            document.Creator   = "Seguros La Floresta";
+            document.Author    = "Seguros La Venezolana";
+            document.Title     = "Colectivo de Vida";
+
+            Page pages = new Page();
+
+
+            //Agregar Logo                
+            pages.Elements.Add(new ceTe.DynamicPDF.PageElements.Image(System.Web.HttpContext.Current.Server.MapPath(@"~/Content/images/logo_seguros-la-floresta.jpg"), 30, 0, 0.4f));
+
+            //Agregar Encabezado
+            pages.Elements.Add(new TextArea("Fecha: " + DateTime.Now.ToString("MMM dd yyyy, H:mm:ss EST"), 30, 5, 720, 12, ceTe.DynamicPDF.Font.Helvetica,
+            12, ceTe.DynamicPDF.TextAlign.Center));
+            pages.Elements.Add(new TextArea("Solicitud Colectivo de Vida - Saldo Deudor", -100, 60, 720, 18, ceTe.DynamicPDF.Font.HelveticaBold, 18, ceTe.DynamicPDF.TextAlign.Center));
+
+            //Datos del Cliente
+            ceTe.DynamicPDF.PageElements.Table table0 = new ceTe.DynamicPDF.PageElements.Table(334, 120, 50, 10);
+            table0.Columns.Add(150);
+            Row row1    = table0.Rows.Add(10, ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White);
+            row1.Align  = CellAlign.Center;
+            row1.VAlign = CellVAlign.Center;
+
+            row1.Cells.Add("Solicitud N°: " + c.codigo);
+            pages.Elements.Add(table0);
+
+            //Tabla Datos del Cliente
+            ceTe.DynamicPDF.PageElements.Table table = new ceTe.DynamicPDF.PageElements.Table(25, 150, 460, 600);
+            table.Columns.Add(160);
+            table.Columns.Add(300);
+
+            Row row0    = table.Rows.Add(20, ceTe.DynamicPDF.Font.HelveticaBold, 16, Grayscale.Black, Grayscale.White);
+            row0.Align  = CellAlign.Center;
+            row0.VAlign = CellVAlign.Center;
+            row0.Cells.Add("Datos del Cliente", ceTe.DynamicPDF.Font.HelveticaOblique, 12, RgbColor.Black, RgbColor.White, 2, 1);
+
+            Row  row2    = table.Rows.Add(20);
+            Cell cell1   = row2.Cells.Add("Cédula/RUC:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            cell1.Align  = CellAlign.Left;
+            cell1.VAlign = CellVAlign.Center;
+            row2.Cells.Add(c.cedula);
+
+            Row  row3    = table.Rows.Add(20);
+            Cell cell2   = row3.Cells.Add("Nombre y Apellido:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            cell2.Align  = CellAlign.Left;
+            cell2.VAlign = CellVAlign.Center;
+            row3.Cells.Add(c.nombre + " " + c.apellido);
+
+            Row  row4    = table.Rows.Add(20);
+            Cell cell4   = row4.Cells.Add("Número Telefónico:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            cell2.Align  = CellAlign.Left;
+            cell2.VAlign = CellVAlign.Center;
+            row4.Cells.Add(c.telefono);
+
+            pages.Elements.Add(table);
+
+            //Tabla Datos del Crédito
+            ceTe.DynamicPDF.PageElements.Table table4 = new ceTe.DynamicPDF.PageElements.Table(25, 250, 460, 600);
+            table4.Columns.Add(160);
+            table4.Columns.Add(300);
+
+            Row tab2row0    = table4.Rows.Add(20, ceTe.DynamicPDF.Font.HelveticaBold, 16, Grayscale.Black, Grayscale.White);
+            tab2row0.Align  = CellAlign.Center;
+            tab2row0.VAlign = CellVAlign.Center;
+            tab2row0.Cells.Add("Datos del Crédito", ceTe.DynamicPDF.Font.HelveticaOblique, 12, RgbColor.Black, RgbColor.White, 2, 1);
+
+            Row  tab2row1    = table4.Rows.Add(20);
+            Cell tab2cell1   = tab2row1.Cells.Add("Monto del Crédito:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab2cell1.Align  = CellAlign.Left;
+            tab2cell1.VAlign = CellVAlign.Center;
+            tab2row1.Cells.Add(c.montocredito.ToString());
+
+            Row  tab2row3    = table4.Rows.Add(20);
+            Cell tab2cell2   = tab2row3.Cells.Add("Tipo del Crédito:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab2cell2.Align  = CellAlign.Left;
+            tab2cell2.VAlign = CellVAlign.Center;
+            tab2row3.Cells.Add(c.tipocredito2);
+            pages.Elements.Add(table4);
+
+            //Tabla Informacion de la Operación en Línea
+            ceTe.DynamicPDF.PageElements.Table table3 = new ceTe.DynamicPDF.PageElements.Table(25, 330, 460, 600);
+            table3.Columns.Add(160);
+            table3.Columns.Add(300);
+
+            Row tab3row0    = table3.Rows.Add(20, ceTe.DynamicPDF.Font.HelveticaBold, 16, Grayscale.Black, Grayscale.White);
+            tab3row0.Align  = CellAlign.Center;
+            tab3row0.VAlign = CellVAlign.Center;
+            tab3row0.Cells.Add("Informacion de la Operación en Línea", ceTe.DynamicPDF.Font.HelveticaOblique, 12, RgbColor.Black, RgbColor.White, 2, 1);
+
+            Row  tab3row1    = table3.Rows.Add(20);
+            Cell tab3cell1   = tab3row1.Cells.Add("Peso:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab3cell1.Align  = CellAlign.Left;
+            tab3cell1.VAlign = CellVAlign.Center;
+            tab3row1.Cells.Add(c.peso.ToString());
+
+            Row  tab3row3    = table3.Rows.Add(20);
+            Cell tab3cell2   = tab3row3.Cells.Add("Talla (estatura):", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab3cell2.Align  = CellAlign.Left;
+            tab3cell2.VAlign = CellVAlign.Center;
+            tab3row3.Cells.Add(c.estatura.ToString());
+
+            Row  tab3row4    = table3.Rows.Add(20);
+            Cell tab3cell3   = tab3row4.Cells.Add("Aplicación de Tarifa:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab3cell3.Align  = CellAlign.Left;
+            tab3cell3.VAlign = CellVAlign.Center;
+            tab3row4.Cells.Add("");
+
+            Row  tab3row5    = table3.Rows.Add(20);
+            Cell tab3cell4   = tab3row5.Cells.Add("Estatus:", ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 1);
+            tab3cell4.Align  = CellAlign.Left;
+            tab3cell4.VAlign = CellVAlign.Center;
+            tab3row5.Cells.Add(c.aprobacion);
+
+            pages.Elements.Add(table3);
+
+            //Recaudo
+            if (c.codaprobacion.Equals('A'))
+            {
+                ceTe.DynamicPDF.PageElements.Table table5 = new ceTe.DynamicPDF.PageElements.Table(25, 450, 460, 600);
+                table5.Columns.Add(160);
+                table5.Columns.Add(300);
+                Row tab5row0    = table5.Rows.Add(20, ceTe.DynamicPDF.Font.HelveticaBold, 16, Grayscale.Black, Grayscale.White);
+                tab5row0.Align  = CellAlign.Center;
+                tab5row0.VAlign = CellVAlign.Center;
+                tab5row0.Cells.Add("Recaudos", ceTe.DynamicPDF.Font.HelveticaOblique, 12, RgbColor.Black, RgbColor.White, 2, 1);
+
+                string listarecaudos = "";
+                string nombrerecaudo = "";
+
+                    List<Recaudo> recaudo = c.listadorecaudo;
+                    foreach (Recaudo r in recaudo)
+                    {
+                        nombrerecaudo = ". " + r.recaudo + " " + Environment.NewLine;
+                        listarecaudos = listarecaudos + nombrerecaudo;
+                    }
+
+                Row  tab5row1  = table5.Rows.Add(10);
+                Cell tab5cell1 = tab5row1.Cells.Add(listarecaudos, ceTe.DynamicPDF.Font.HelveticaBold, 12, Grayscale.Black, Grayscale.White, 2);
+                pages.Elements.Add(table5);
+            }
+
+            alternateBG = false;
+
+            PageNumberingLabel pageNumLabel = new PageNumberingLabel("Página %%CP(1)%% of %%TP(1)%%", -100, bodyBottom + 5, 720, 10,
+            ceTe.DynamicPDF.Font.Helvetica, 10, ceTe.DynamicPDF.TextAlign.Center);
+            pages.Elements.Add(pageNumLabel);
+            document.Pages.Add(pages);
+
+            return document;
+
+        }
+
+
+
+        [LogMe]
+        [Permisologia("solicitudaprobacion")]
+        public ActionResult Resultado(ColectivoVida c)
+        {
+            return View(c);
+        }
+
+
+        [LogMe]
+        [Permisologia("consultaaprovacion")]
+        public ActionResult Consultar()
+        {
+            DateTime fecha1 = new DateTime(2014, 1, 18);
+            DateTime fecha2 = DateTime.Today;
+
+            var documentos = from book2 in db.COTT_CLIENTEs
+                             join book in db.COTT_TEST_VIDAs
+                             on book2.COCL_NU_CEDULA_RIF equals book.COTE_NU_CEDULA_RIF
+
+                             select new ColectivoVida()
+                             {
+                                 fecha = book.COTE_FE_CREDITO,
+                                 cedula       = book.COTE_NU_CEDULA_RIF,
+                                 montocredito = decimal.ToDouble(book.COTE_MT_CREDITO),
+                                 tipocredito  = book.COTE_TP_CREDITO,
+                                 nombre       = book2.COCL_PRIMER_NOMBRE,
+                                 apellido     = book2.COCL_PRIMER_APELLIDO,
+                                 aprobacion   = book.COTE_IN_APROBADO == "A" ? "Aprobado" : "Por Aprobar"
+                             };
+            if (TempData["CustomError"] != null)
+                ModelState.AddModelError(string.Empty, TempData["CustomError"].ToString());
+
+            return View(documentos);
+        }
+
+        [LogMe]
+        [Permisologia("consultaaprovacion")]
+        public ActionResult VersionImprimible()
+        {
+            return View();
+        }
+
+        [LogMe]
+        [Permisologia("consultaaprovacion")]
+        public ActionResult Excelfile()
+        {
+            String fileName = DateTime.Now.ToString("yyyyMMdd") + "SolicitudColectivoVida.xlsx";
+            Response.ClearContent();
+            Response.Buffer = true;
+            Response.AddHeader("content-disposition", "attachment; filename=" + fileName);
+            Response.ContentType = "application/ms-excel";
+            Response.Charset     = "";
+
+            using (ExcelPackage pck = new ExcelPackage())
+            {
+                pck.Workbook.Properties.Author = "Seguros La Floresta";
+                pck.Workbook.Properties.Title  = "Polizas";
+                var sheet = pck.Workbook.Worksheets.Add("Listado");
+
+                sheet.Row(1).Height = 45.00D;
+                System.Drawing.Image logo = System.Drawing.Image.FromFile(System.Web.HttpContext.Current.Server.MapPath(@"~/Content/images/logo_seguros-la-floresta.jpg"));
+                OfficeOpenXml.Drawing.ExcelPicture pic = sheet.Drawings.AddPicture("Pic1", logo);
+                pic.SetPosition(1,1);
+                pic.SetSize(50);
+
+                sheet.Cells[2, 1].Value = "Nombre";
+                sheet.Cells[2, 2].Value = "Apellido";
+                sheet.Cells[2, 3].Value = "Cédula";
+                sheet.Cells[2, 4].Value = "Monto de Crédito";
+                sheet.Cells[2, 5].Value = "Año de Crédito";
+                sheet.Cells[2, 6].Value = "Tipo de Crédito";
+                sheet.Cells[2, 7].Value = "Aprobación";
+
+                sheet.Column(1).Width = 17;
+                sheet.Column(2).Width = 17;
+                sheet.Column(3).Width = 13;
+                sheet.Column(4).Width = 16;
+                sheet.Column(5).Width = 15;
+                sheet.Column(6).Width = 15;
+                sheet.Column(7).Width = 13;
+
+                using (ExcelRange rng = sheet.Cells["A2:G2"])
+                {
+                    rng.Style.Font.Bold        = true;
+                    rng.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(79, 129, 189));
+                    rng.Style.Font.Color.SetColor(System.Drawing.Color.White);
+                }
+                var rowIndex = 3;
+
+                DateTime fecha1 = new DateTime(2014, 1, 18);
+                DateTime fecha2 = DateTime.Today;
+
+                var documentos = from book in db.COTT_TEST_VIDAs
+                                 join book2 in db.COTT_CLIENTEs
+                                 on book.COTE_NU_CEDULA_RIF equals book2.COCL_NU_CEDULA_RIF
+  
+                                 select new ColectivoVida()
+                                 {
+                                     fecha        = book.COTE_FE_CREDITO,
+                                     cedula       = book.COTE_CD_NACIONALIDAD + "-" +  book.COTE_NU_CEDULA_RIF,
+                                     montocredito = decimal.ToDouble(book.COTE_MT_CREDITO),
+                                     tipocredito  = NomCredito(book.COTE_TP_CREDITO),
+                                     nombre       = book2.COCL_PRIMER_NOMBRE,
+                                     anio         = int.Parse(book.COTE_TM_CREDITO),
+                                     apellido     = book2.COCL_PRIMER_APELLIDO,
+                                     aprobacion   = book.COTE_IN_APROBADO == "A" ? "Aprobado" : "Por Aprobar"
+                                 };
+
+                foreach (var item in documentos)
+                {
+                    var col = 1;
+                    sheet.Cells[rowIndex, col++].Value = item.nombre;
+                    sheet.Cells[rowIndex, col++].Value = item.apellido;
+                    sheet.Cells[rowIndex, col++].Value = item.cedula;
+                    sheet.Cells[rowIndex, col++].Value = item.montocredito;
+                    sheet.Cells[rowIndex, col++].Value = item.anio;
+                    sheet.Cells[rowIndex, col++].Value = item.tipocredito;
+                    sheet.Cells[rowIndex, col++].Value = item.aprobacion;
+                    rowIndex++;
+                }
+                Response.BinaryWrite(pck.GetAsByteArray());
+            }
+            Response.Flush();
+            Response.End();
+
+            return View();
+        }
+
+
+        public JsonResult GetJsonDatosBasicos(string cedula)
+        {
+            //var stateListt = this.GetDatosBasicos(cedula);
+            var stateListt   = this.GetDatosBasicos2(cedula);
+            ColectivoVida c  = new ColectivoVida();
+            ClienteF      cf = GetDatosBasicos(cedula);
+
+            if (stateListt != null)
+            {
+                c.mensajeusuario = "(!)El cliente ya tiene una solicitud pendiente";
+            }else{
+                c.mensajeusuario = "";
+                c.correo   = cf.correo;
+                c.telefono = cf.telefono;
+                c.nombre   = cf.nombre;
+                c.apellido = cf.apellido;
+            }
+
+            var stateListt2 = c;
+            return Json(stateListt2, JsonRequestBehavior.AllowGet);
+
+        }  
+
+
+        public ClienteF GetDatosBasicos(string cedula)
+        {
+            var documentos = from book in db.COTT_CLIENTEs
+                             where book.COCL_NU_CEDULA_RIF == cedula
+                             select new
+                             {
+                                 correo   = book.COCL_DI_EMAIL,
+                                 telefono = book.COCL_NU_TELEFONO,
+                                 nombre   = book.COCL_PRIMER_NOMBRE,
+                                 apellido = book.COCL_PRIMER_APELLIDO
+                             };
+
+            ClienteF c = new ClienteF();
+            foreach (var v in documentos)
+            {
+                c.correo   = v.correo;
+                c.telefono = v.telefono;
+                c.nombre   = v.nombre;
+                c.apellido = v.apellido;
+            }
+
+            return c;
+        }
+
+
+        public string GetDatosBasicos2(string cedula)
+        {
+            var documentos = from book in db.COTT_TEST_VIDAs
+                             where book.COTE_NU_CEDULA_RIF == cedula
+                             select new
+                             {
+                                 codigo = book.COTE_ID_TEST
+                             };
+
+            ColectivoVida c = new ColectivoVida();
+            foreach (var v in documentos)
+            {
+                c.codigo = v.codigo.ToString();
+            }
+
+            return c.codigo;
+        }
+
+
+        public string NomCredito(string codigo)
+        {
+            string credito = null;
+            switch (codigo)
+            {
+                case "PE":
+                    credito = "PERSONALES";
+                    break;
+                case "AU":
+                    credito = "AUTOMÓVIL";
+                    break;
+                case "HI":
+                    credito = "HIPOTECARIO";
+                    break;
+            }
+            return credito;
+        }
+
+        public SelectList GetCreditoList()
+        {
+            List<TipoCredito> tipos = new List<TipoCredito>()
+            {
+                new TipoCredito() { codigo = "",    credito = "Seleccione un Tipo de Crédito"},
+                new TipoCredito() { codigo = "PE",  credito = "Personales"},
+                new TipoCredito() { codigo = "AU",  credito = "Automóvil"},
+                new TipoCredito() { codigo = "HI",  credito = "Hipotecario"}
+            };
+            SelectList objselectlist = new SelectList(tipos, "codigo", "credito");
+            return objselectlist;
+        }
+
+        public SelectList GetTipoIdentificadorList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value = "",  Text = "Seleccione un identificador"},
+                 new SelectListItem{ Value = "PA",Text = "Pasaporte"},
+                 new SelectListItem{ Value = "PN",Text = "Natural"},
+                 new SelectListItem{ Value = "RG",Text = "RUC Gubernamental"},
+                 new SelectListItem{ Value = "RJ",Text = "RUC Juridico"},
+                 new SelectListItem{ Value = "X", Text = "Menor"}
+             };
+            myList = data.ToList();
+            SelectList objselectlist = new SelectList(myList, "Value", "Text");
+            return objselectlist;
+        }
+
+        public SelectList GetExamenList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value = "0",Text = "Seleccione un exámen"},
+                 new SelectListItem{ Value = "1",Text = "Exámenes especiales de diagnóstico"},
+                 new SelectListItem{ Value = "2",Text = "Radiografía"},
+                 new SelectListItem{ Value = "3",Text = "Electrocardiogramas"},
+                 new SelectListItem{ Value = "5",Text = "Exámenes de laboratorio"}
+             };
+            myList = data.ToList();
+            SelectList objselectlist = new SelectList(myList, "Value", "Text");
+            return objselectlist;
+        }
+
+        public SelectList GetClinicaList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value = "0",Text = "Seleccione una clínica"},
+                 new SelectListItem{ Value = "1",Text = "Hospital"},
+                 new SelectListItem{ Value = "2",Text = "Clínica"},
+                 new SelectListItem{ Value = "3",Text = "Sanatorio"},
+                 new SelectListItem{ Value = "5",Text = "Casa de reposo"}
+             };
+            myList = data.ToList();
+            SelectList objselectlist = new SelectList(myList, "Value", "Text");
+            return objselectlist;
+        }
+
+        public SelectList GetTratamientoList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value = "0",Text = "Seleccione el Tipo de Tratamiento"},
+                 new SelectListItem{ Value = "1",Text = "Descanso"},
+                 new SelectListItem{ Value = "2",Text = "Tratamiento"},
+                 new SelectListItem{ Value = "3",Text = "Observación"},
+                 new SelectListItem{ Value = "5",Text = "Diagnóstico"}
+             };
+            myList = data.ToList();
+            SelectList objselectlist = new SelectList(myList, "Value", "Text");
+            return objselectlist;
+        }
+
+        public SelectList GetAnios()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            for (int i = 1; i <= 31; i++)
+            {
+                SelectListItem s = new SelectListItem();
+                s.Text  = i.ToString();
+                s.Value = i.ToString();
+                myList.Add(s);
+            }
+            SelectList objselectlist = new SelectList(myList, "Value", "Text");
+            return objselectlist;
+        }
+
+        public List<Cuestionario> listcuestionario()
+        {
+            List<Cuestionario> cuestionario = new List<Cuestionario>();
+            cuestionario.Add(new Cuestionario() { codigo = 0, pregunta = "Ha tenido algún accidente?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 1, pregunta = "Dentro de los últimos 5 años ha consultado y/o ha sido examinado por un médico o ha recibido atención médica?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 2, pregunta = "Ha estado en hospital clínica, sanatorio o casa de reposo para descanso, tratamiento, observación o diagnóstico?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 3, pregunta = "Dentro de los ultimos 5 años, se le ha practicado exámenes especiales de diagnóstico o bien radiografías, electrocardiogramas o exámenes de laboratorio?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 4, pregunta = "Dentro de los ultimos 5 años ha recibido transfuciones sanguíneas?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 5, pregunta = "Ha perdido o ganado peso en el último año?", respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 6, pregunta = "Se considera usted sano?",          respuesta = false, });
+            cuestionario.Add(new Cuestionario() { codigo = 7, pregunta = "Tiene pendiente alguna operación?", respuesta = false, });          
+            return cuestionario;
+        }
+
+        public Recaudo GetRecaudos(double sumaasegurada, int edad)
+        {
+            var documentos = from book in db.CONT_REL_VIDA_RECAUDOs
+                             where
+                             (Convert.ToDouble(book.CORV_MT_MINIMO) <= sumaasegurada
+                             &&
+                             Convert.ToDouble(book.CORV_MT_MAXIMO)  >= sumaasegurada)
+                             &&
+                             (Convert.ToDouble(book.CORV_ED_MINIMO) <= edad
+                             &&
+                             Convert.ToDouble(book.CORV_ED_MAXIMO)  >= edad)
+                             select new
+                             {
+                                recaudo = book.CORV_CD_RECAUDO
+                             };
+
+            Recaudo r = new Recaudo();
+            foreach (var v in documentos)
+            {
+                r.recaudo = v.recaudo;
+            }
+            return r;
+        }
+
+        public List<Recaudo> GetListRecaudo(string codigo)
+        {
+            var documentos = from book in db.CONT_RECAUDO_VIDAs
+                             where
+                             book.CORE_CD_RECAUDO == codigo
+                             select new
+                             {
+                                recaudo = book.CORE_DE_RECAUDO
+                             };
+
+            foreach (var v in documentos)
+            {
+                Recaudo r = new Recaudo();
+                r.recaudo = v.recaudo;
+                listrec.Add(r);
+            }
+
+            return listrec;
+        }
+    }
+}
