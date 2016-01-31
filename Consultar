@@ -1,0 +1,172 @@
+@model IQueryable<SegurosLaFloresta.ViewModels.ColectivoVida.ColectivoVida>
+
+@{
+    ViewBag.Title = "Consultar";
+    Layout = "~/Views/Shared/Admin/_LayoutAdmin.cshtml";
+}
+
+<style>
+    #example tbody tr i {
+        cursor: pointer;
+        -webkit-transition: -webkit-transform 0.4s ease-out;
+        -moz-transition: -moz-transform 0.4s ease-out;
+        transition: transform 0.4s ease-out;
+    }
+
+        #example tbody tr i:hover {
+            -webkit-transform: rotateZ(360deg);
+            -moz-transform: rotateZ(360deg);
+            transform: rotateZ(360deg);
+        }
+
+    #example tbody tr {
+        cursor: default;
+    }
+
+    table.dataTable tbody tr.selected {
+        background-color: #b0bed9 !important;
+    }
+
+
+    tr.selected td.details-control i {
+        color: #FFF !important;
+    }
+
+    .adorno {
+        padding: 10px;
+    }
+
+    .metro .command-button.primary.margen {
+        margin-bottom: 5px;
+    }
+
+    #contenedor {
+        width: 90%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        #contenedor .titulo {
+            text-align: center;
+        }
+
+    #example_paginate > span > span {
+        float: left;
+    }
+</style>
+
+@section afterJQuery {
+    @Scripts.Render("~/bundles/datatables")
+    <script>
+        $(document).ready(function () {
+            var table = $('#example').DataTable({
+                language: {
+                    processing: "Procesando...",
+                    lengthMenu: "Mostrar _MENU_ registros",
+                    zeroRecords: "No se encontraron resultados",
+                    emptyTable: "Ningún dato disponible en esta tabla",
+                    info: "Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros",
+                    infoEmpty: "No hay registros",
+                    infoFiltered: "(filtrado de un total de _MAX_ registros)",
+                    infoPostFix: "",
+                    search: "Buscar:",
+                    url: "",
+                    infoThousands: ",",
+                    loadingRecords: "Cargando...",
+                    paginate: {
+                        first: "Primero",
+                        last: "Último",
+                        next: "Siguiente",
+                        previous: "Anterior"
+                    },
+                    aria: {
+                        sortAscending: ": Activar para ordenar la columna de manera ascendente",
+                        sortDescending: ": Activar para ordenar la columna de manera descendente"
+                    }
+                },
+                columns: [
+                    {
+                        "orderable": false
+                    },
+                    {
+                        "orderable": true
+                    },
+                    {
+                        "orderable": true
+                    },
+                    {
+                        "orderable": true
+                    },
+                    {
+                        "orderable": true
+                    },
+                    {
+                        "orderable": true
+                    },
+                ],
+                order: [[1, 'asc']]
+
+            });//Inicializacion del DataTable
+        });
+
+    </script>
+}
+
+@using (Html.BeginForm())
+{
+
+    <div id="contenedor">
+        <br />
+        <br />
+        <h2>Consultar Autorización de Colectivo de Vida</h2>
+        <hr />
+        <table id="example" class="table striped hovered dataTable">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var documento in Model)
+                {
+                    <tr>
+                        <td></td>
+                        <td class="text-center">@documento.nombre @documento.apellido</td>
+                        <td class="text-center">@documento.cedula</td>
+                        <td class="text-center">@documento.montocredito</td>
+                        <td class="text-center">@documento.fecha</td>
+                        <td class="text-center">@documento.aprobacion</td>
+                    </tr>
+                }
+
+
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th></th>
+                    <th>Nombre</th>
+                    <th>Cédula</th>
+                    <th>Monto</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </tfoot>
+        </table>
+        <img src="/Content/images/ui/iconos/icono_excel.png" alt="Mountain View" style="width:15px;height:15px;">
+        <span class="jtable-toolbar-item">
+            <span class="jtable-toolbar-item-text"><a href="/ColectivoVida/Excelfile" target="_blank" style="color: blue">Exportar a Excel</a></span>
+        </span>
+    </div>
+
+
+    <br />
+    <div id="error-summary">
+        @Html.ValidationSummary("Se han conseguido los siguientes errores:")
+    </div>
+
+}
