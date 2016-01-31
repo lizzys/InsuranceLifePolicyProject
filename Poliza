@@ -1,0 +1,535 @@
+@model SegurosLaFloresta.ViewModels.ColectivoVida.ColectivoVida
+
+@{
+    ViewBag.Title = "Solicitud de Autorización de Colectivo de Vida";
+    Layout = "~/Views/Shared/Admin/_LayoutAdmin.cshtml";
+}
+
+<link href="@Url.Content("~/Content/emision/emision.css")" rel="stylesheet" type="text/css" />
+<h2>Solicitud de Autorización de Colectivo de Vida</h2>
+<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script src="http://code.jquery.com/jquery-1.7.1.js"></script>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <hr />
+    </div>
+
+    <style>
+        .seltipocredito {
+            position: relative;
+            border: 1px solid #ccc;
+            width: 3em;
+            overflow: hidden;
+            background-color: #fff;
+        }
+
+        .seltipocredito:before {
+            content: '';
+            position: absolute;
+            right: 5px;
+            top: 7px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 7px 5px 0 5px;
+            border-color: #000000 transparent transparent transparent;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .seltipocredito select {
+            padding: 5px 8px;
+            width: 160%;
+            border: none;
+            box-shadow: none;
+            background-color: transparent;
+            background-image: none;
+            appearance: none;
+        }
+
+
+        .bordeblanco {
+            background-color: white;
+            border-style: solid; 
+            border-color: white;
+            border: 0px 4px 0px 4px;
+            padding: 1px 6px 1px 6px;
+            font-style: italic;
+            color: #A83939;
+            font-size: 18px;
+            font-weight: bold;
+            font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            width: 400px;
+        }
+
+
+    </style>
+
+
+    <script type="text/javascript" language="javascript">
+
+        $(document).ready(function () {
+            $('#clinica').prop('disabled', true);
+            $('#tratamiento').prop('disabled', true);
+            $('#examen').prop('disabled', true);
+            $('#detalle1').prop('disabled', true);
+            $('#detalle4').prop('disabled', true);
+            $('#detalle5').prop('disabled', true);
+            $('#detalle6').prop('disabled', true);
+            $('#detalle8').prop('disabled', true);
+
+            $("input[name=pregunta2]:radio").change(function () {
+                var selection = $(this).val();
+                if (selection == 'False') {
+                    $('#clinica').prop('disabled', true);
+                    $('#tratamiento').prop('disabled', true);
+                }
+
+                if (selection == 'True') {
+                    $('#clinica').prop('disabled', false);
+                    $('#tratamiento').prop('disabled', false);
+                }
+            });
+            
+            $("input[name=pregunta3]:radio").change(function () {
+                var seleccionado = $(this).val();
+
+                if (seleccionado == 'False') {
+                    $('#examen').prop('disabled', true);
+                }
+                if (seleccionado == 'True') {
+                    $('#examen').prop('disabled', false);
+                }
+            });
+
+            $("input[name=pregunta1]:radio").change(function () {
+                var selection = $(this).val();
+
+                if (selection == 'False') {
+                    $('#detalle1').prop('disabled', true);
+                }
+                if (selection == 'True') {
+                    $('#detalle1').prop('disabled', false);
+                }
+            });
+
+            $("input[name=pregunta4]:radio").change(function () {
+                var selection = $(this).val();
+
+                if (selection == 'False') {
+                    $('#detalle4').prop('disabled', true);
+                }
+                if (selection == 'True') {
+                    $('#detalle4').prop('disabled', false);
+                }
+            });
+
+            $("input[name=pregunta5]:radio").change(function () {
+                var selection = $(this).val();
+
+                if (selection == 'False') {
+                    $('#detalle5').prop('disabled', true);
+                }
+                if (selection == 'True') {
+                    $('#detalle5').prop('disabled', false);
+                }
+            });
+
+            $("input[name=pregunta6]:radio").change(function () {
+                var selection = $(this).val();
+
+                if (selection == 'False') {
+                    $('#detalle6').prop('disabled', true);
+                }
+                if (selection == 'True') {
+                    $('#detalle6').prop('disabled', false);
+                }
+            });
+
+            $("input[name=pregunta8]:radio").change(function () {
+                var selection = $(this).val();
+
+                if (selection == 'False') {
+                    $('#detalle8').prop('disabled', true);
+                }
+                if (selection == 'True') {
+                    $('#detalle8').prop('disabled', false);
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            $('#limpiar').click(function () {
+                $('input[type=text]').val('');
+                $('#textarea').val('');
+                $('input[type=radio]').val(["False"]);
+                $('input[type=email]').val('');
+                $('input[type=number]').val('');
+                $('input[type=checkbox]').val('');
+                //$('select option[0]').attr("selected", true);
+
+                $("#tipoidentificador")[0].selectedIndex = 0;
+                $("#tipocredito")[0].selectedIndex = 0;
+                $("#anio")[0].selectedIndex = 0;
+                $("#anio")[0].selectedIndex = 0;
+                $("#clinica")[0].selectedIndex = 0;
+                $("#tratamiento")[0].selectedIndex = 0;
+                $("#examen")[0].selectedIndex = 0;
+
+
+                $('#detalle1').prop('disabled', true);
+                $('#detalle4').prop('disabled', true);
+                $('#detalle5').prop('disabled', true);
+                $('#detalle6').prop('disabled', true);
+                $('#detalle8').prop('disabled', true);
+
+                $('#clinica').prop('disabled', true);
+                $('#tratamiento').prop('disabled', true);
+                $('#examen').prop('disabled', true);
+
+            });
+
+            $('#cedula').blur(function () {
+                $.ajax({
+                    url: "@Url.Action("GetJsonDatosBasicos", "ColectivoVida")",
+                    dataType: "json",
+                    type: "GET",
+                    data: { cedula: $("#cedula").val() },
+                    error: function () {
+                    },
+                    beforeSend: function () {
+                    },
+                    success: function (data) {
+                        $('#correo').val(data['correo']);
+                        $('#nombre').val(data['nombre']);
+                        $('#apellido').val(data['apellido']);
+                        $('#telefono').val(data['telefono']);
+                        $('#mensajeusuario').val(data['mensajeusuario']);
+                    }
+                });
+            });
+        });
+
+    </script>
+
+<!-- Controles -->
+    <div id="campos_base" class="grid fluid">
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.DisplayFor(m => m.fecha2)
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.tipoidentificador, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control select">
+                            @Html.DropDownListFor(model => model.tipoidentificador, Model.listTipoIdentificador)
+                        </div>
+                    </div>
+                    <div class="fl">
+                        @Html.LabelFor(model => model.cedula, htmlAttributes: new { @class = "control-label col-md-4" })
+                        <div data-role="input-control" class="input-control text size2">
+                            @Html.EditorFor(model => model.cedula, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                        @Html.EditorFor(model => model.mensajeusuario, new { htmlAttributes = new { @class = "bordeblanco" } })
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.nombre, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.nombre, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+
+                    <div class="fl">
+                        @Html.LabelFor(model => model.apellido, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.apellido, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.correo, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.correo, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                    <div class="fl">
+                        @Html.LabelFor(model => model.telefono, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.telefono, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+
+                <div id="campos_base_contratante" class="grid fluid">
+                    <div id="divContratanteToggle" class=" row tituloToggle">
+                        <div class="span12"> <h4> &nbsp;<i class="icon-arrow-right-2"></i>&nbsp;&nbsp;Información de Solicitud de Crédito: <span id="spanContratante"></span></h4></div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.tipocredito, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control select">
+                            @Html.DropDownListFor(model => model.tipocredito, Model.listtipocredito, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+
+                    <div class="fl">
+                        @Html.LabelFor(model => model.montocredito, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.montocredito, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.anio, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control select">
+                            @Html.DropDownListFor(model => model.anio, Model.listanio)
+                        </div>
+                    </div>
+                </div>
+
+                <div id="campos_base_contratante" class="grid fluid">
+                    <div id="divContratanteToggle" class=" row tituloToggle">
+                        <div class="span12"> <h4> &nbsp;<i class="icon-arrow-right-2"></i>&nbsp;&nbsp;Información de la Salud del Asegurado: <span id="spanContratante"></span></h4></div>
+                    </div>
+                </div>
+        
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.peso, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.peso, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                    <div class="fl">
+                        @Html.LabelFor(model => model.estatura, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.estatura, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="fl">
+                        @Html.LabelFor(model => model.edad, htmlAttributes: new { @class = "control-label col-md-2" })
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.edad, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="campos_base" class="grid fluid">
+
+                <br/>
+                <div id="campos_contratante_toggle">
+                    <h5>Cuestionario para el asegurado:</h5>
+                    <hr />
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta1, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta1, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta1, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle1, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta2, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta2, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta2, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control select">
+                            @ViewBag.Text1
+                            @Html.DropDownListFor(model => model.clinica, Model.listclinica, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                    <div class="fl">
+                        <div data-role="input-control" class="input-control select">
+                            @ViewBag.Text2
+                            @Html.DropDownListFor(model => model.tratamiento, Model.listtratamiento, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta3, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta3, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta3, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl">
+                        <div data-role="input-control" class="input-control select">
+                            @Html.DropDownListFor(model => model.examen, Model.listexamenes, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta4, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta4, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta4, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle4, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta5, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta5, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta5, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle5, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta6, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta6, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta6, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle6, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta7, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta7, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta7, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle7, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        @Html.LabelFor(model => model.pregunta8, htmlAttributes: new { @class = "control-label col-md-2" })
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="">
+                            Si @Html.RadioButtonFor(model => model.pregunta8, true, new { htmlAttributes = new { @class = "form-control" } })
+                            No @Html.RadioButtonFor(model => model.pregunta8, false, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="fl mr5">
+                        <div data-role="input-control" class="input-control text size4">
+                            @Html.EditorFor(model => model.detalle8, new { htmlAttributes = new { @class = "form-control" } })
+                        </div>
+                    </div>
+                </div>
+        <div class="row">
+            <div class="fl mr5">
+                <br />
+            </div>
+        </div>
+    </div>   
+
+    <div id="error-summary">
+        @Html.ValidationSummary("Revisar los siguientes campos:")
+        @ViewBag.ErrorRegistro
+    </div>
+
+
+    <div class="form-horizontal">
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-10">
+                    <br />
+                    <input type="submit" value="Guardar" class="btn btn-default primary" />
+                    <input type="button" value="Limpiar" id="limpiar" class="btn btn-default primary" />
+                </div>
+            </div>
+        </div>
+}
