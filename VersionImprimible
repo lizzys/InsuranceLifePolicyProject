@@ -1,0 +1,34 @@
+
+@{
+    ViewBag.Title = "VersionImprimible";
+    Layout = "~/Views/Shared/Admin/_LayoutAdmin.cshtml";
+}
+
+<h2>VersionImprimible</h2>
+
+<form id="Form1" method="post" runat="server">
+    <div id="Div1">
+        Aprobacion de Seguros la Floresta
+    </div>
+    <input type="button" value="Print" onclick="JavaScript:printPartOfPage('Div1');">
+
+    <script type="text/javascript">
+<!--
+function printPartOfPage(elementId)
+{
+ var printContent = document.getElementById(elementId);
+ var windowUrl = 'about:blank';
+ var uniqueName = new Date();
+ var windowName = 'Print' + uniqueName.getTime();
+ var printWindow = window.open(windowUrl, windowName, 'left=50000,top=50000,width=0,height=0');
+
+ printWindow.document.write(printContent.innerHTML);
+ printWindow.document.close();
+ printWindow.focus();
+ printWindow.print();
+ printWindow.close();
+}
+// -->
+    </script>
+
+</form>
