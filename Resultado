@@ -1,0 +1,376 @@
+@model SegurosLaFloresta.ViewModels.ColectivoVida.ColectivoVida
+@{
+    ViewBag.Title = "Resultado";
+    Layout = "~/Views/Shared/Admin/_LayoutAdmin.cshtml";
+}
+
+<h2>Solicitud de Autorización de Colectivo de Vida</h2>
+<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+<script type="text/javascript" language="javascript">
+    function imprimir() {
+        var checkedValue = $('[name="playersradio"]:checked').val();
+        alert("error");
+    }
+</script>
+
+<style>
+    .tlf1 {
+        color: #87CEEB;
+        font-size: 18px;
+        font-weight: bold;
+        font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    #divtablarecaudo {
+        width: 800px;
+    }
+</style>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    <br />
+    <div id="Div2">
+        Aprobacion de Seguros la Floresta
+
+        <div class="bs-callout bs-callout-info">
+            <h4>Procesado</h4>
+            <div class="row">
+                <div class="fl mr5">
+                    <p>
+                        @ViewBag.Mensaje
+                    </p>
+                </div>
+            </div>
+            <div id="divtablarecaudo">
+                @if (ViewBag.CodAprobacion == 'A')
+                {
+                    <div class="row">
+                        <div class="fl mr5">
+                            <h2>Recaudos</h2>
+                        </div>
+                    </div>
+                    foreach (var item in Model.listadorecaudo)
+                    {
+                        <div class="row">
+                            <div class="fl mr5">
+                                @item.recaudo
+                            </div>
+                        </div>
+                    }
+                    <br />
+                }
+            </div>
+        </div>
+        <br />
+    </div>
+
+    <div id="Div1">
+        <style>
+            .textoazul {
+                color: #000000;
+                font-size: 15px;
+                font-weight: bold;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            ul.vineta {
+                list-style-image: url('/Content/images/vineta.jpg');
+            }
+
+            .textonegro {
+                color: #000000;
+                font-size: 15px;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            .textonegro2 {
+                color: #000000;
+                font-size: 17px;
+                font-weight: bold;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            .textonegro3 {
+                color: #000000;
+                font-size: 15px;
+                font-weight: bold;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+                text-decoration: underline;
+            }
+
+            .bloque {
+                display: inline-block;
+                margin-left: 5px;
+                height: 100px;
+                width: 100px;
+                border: 2px solid black;
+                border-radius: 100%;
+            }
+
+            p.one {
+                border-style: solid;
+                border-width: 1px;
+            }
+
+            .bordetabla {
+                border-collapse: collapse;
+            }
+
+            .bordetabla2 {
+                border: 1px solid black;
+            }
+
+            .clearfix:before,
+            .clearfix:after {
+                content: " ";
+                display: table;
+            }
+
+            .clearfix:after {
+                clear: both;
+            }
+
+            .clearfix {
+                *zoom: 1;
+            }
+
+            .holder {
+                text-align: center;
+            }
+
+            .column {
+                display: inline-block;
+                *display: inline;
+                *zoom: 1;
+                width: auto;
+            }
+
+            .left {
+                float: left;
+            }
+
+            .middle {
+                margin: 0 auto;
+            }
+
+            .right {
+                float: right;
+            }
+
+            #bordet {
+                position: absolute;
+                width: 130px;
+                height: 30px;
+                top: 250px;
+                left: 770px;
+                border: 1px solid black;
+            }
+
+            #bordetdiv {
+                line-height: 100px;
+                position: absolute;
+                width: 180px;
+                height: 30px;
+                top: 250px;
+                left: 777px;
+                line-height: 30px;
+                vertical-align: middle;
+                color: #000000;
+                font-size: 15px;
+                font-weight: bold;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            #bordetspan {
+                color: #000000;
+                font-size: 12px;
+                font-weight: bold;
+                font-family: Gotham, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            }
+
+            #bordet2 {
+                position: absolute;
+                top: 40px;
+                left: 120px;
+            }
+
+            #bordet3 {
+                position: absolute;
+                top: 50px;
+                left: 700px;
+            }
+
+            #divtitulo {
+                position: absolute;
+                width: 500px;
+                height: 50px;
+                top: 150px;
+                left: 280px;
+            }
+
+            #divtabla {
+                position: absolute;
+                width: 1000px;
+                height: 800px;
+                top: 300px;
+                left: 10px;
+            }
+
+            .tableborder {
+              position: absolute;
+              width: 800px;
+              height: 130px;
+              top: 70px; 
+              left: 100px; 
+            }
+
+
+            .tableborder2 {
+              position: absolute;
+              width: 800px;
+              height: 100px;
+              top: 230px; 
+              left: 100px; 
+            }
+
+
+            .tableborder3 {
+              position: absolute;
+              width: 800px;
+              height: 170px;
+              top: 355px; 
+              left: 100px; 
+            }
+
+
+           .tableborder4 {
+              position: absolute;
+              width: 800px;
+              height: 170px;
+              top: 560px; 
+              left: 100px; 
+            }
+
+        </style>
+
+        <div id="bordet2">
+            <img src="/Content/images/logo_seguros-la-floresta.jpg" style="margin-left: -5px; margin-top: -8px;" width="200" height="70">
+        </div>
+
+        <div id="bordet3">
+            <p class="textoazul">
+                Fecha: @Html.DisplayFor(model => model.fecha2)
+            </p>
+        </div>
+
+        <div id="divtitulo">
+            <p class="textonegro2">SOLICITUD PARA COLECTIVO DE VIDA - SALDO DEUDOR</p>
+        </div>
+
+        <div id="bordetdiv">Solicitud N°:@Html.DisplayFor(model => model.codigo)</div>
+
+        <div id="divtabla">
+            <table class="tableborder">
+                <tr>
+                    <td colspan="2" align="left"><p class="textonegro3">Datos del Cliente</p></td>
+                </tr>
+                <tr>
+                    <td width="30%"><p class="textonegro">Cédula / RUC:</p> </td>
+                    <td width="70%"><p class="textonegro">@Html.DisplayFor(model => model.tipoidentificador) - @Html.DisplayFor(model => model.cedula)</p></td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Nombre y Apellido: </p></td>
+                    <td>
+                        <p class="textonegro">
+                            @Html.DisplayFor(model => model.nombre)
+                            @Html.DisplayFor(model => model.apellido)
+                        </p>
+                    </td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Número Telefónico:</p> </td>
+                    <td><p class="textonegro">@Html.DisplayFor(model => model.telefono)</p></td>
+                </tr>
+            </table>
+            <br />                        
+            <table class="tableborder2">
+                <tr>
+                    <td colspan="2" align="left"><p class="textonegro3">Datos del Crédito</p></td>
+                </tr>
+                <tr>
+                    <td width="30%"><p class="textonegro">Monto del Crédito:</p></td>
+                    <td width="70%"><p class="textonegro">B/: @Html.DisplayFor(model => model.montocredito)</p></td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Tipo de Crédito: </p></td>
+                    <td><p class="textonegro">@Html.DisplayFor(model => model.tipocredito2)</p></td>
+                </tr>
+            </table>
+            <br />
+            <table class="tableborder3">
+                <tr>
+                    <td colspan="2" align="left"><p class="textonegro3">Información de la Operación en Línea</p></td>
+                </tr>
+                <tr>
+                    <td width="30%"><p class="textonegro">Peso:</p></td>
+                    <td width="70%"><p class="textonegro">@Html.DisplayFor(model => model.peso) Libras</p></td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Talla (estatura):</p></td>
+                    <td><p class="textonegro">@Html.DisplayFor(model => model.estatura2) Metros</p></td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Aplicación de Tarifa:</p></td>
+                    <td><p class="textonegro">FALTA</p></td>
+                </tr>
+                <tr>
+                    <td><p class="textonegro">Estatus:</p></td>
+                    <td><p class="textonegro">@Html.DisplayFor(model => model.aprobacion)</p></td>
+                </tr>
+            </table>
+            <br />
+
+            @if (ViewBag.CodAprobacion == 'A')
+            {
+            <table class="tableborder4">
+                <tr>
+                    <td colspan="2" align="left"><p class="textonegro3">Recaudos</p></td>
+                </tr>
+                <tr>
+                    <td colspan="2" align="left">
+                        <ul class="vineta">
+                            <div id="divtablarecaudo">
+                                @foreach (var item in Model.listadorecaudo)
+                                {
+                                    <li><p class="textonegro">@item.recaudo</p></li>
+                                }
+                            </div>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+            }
+        </div>
+    </div>
+}
+
+<input type="button" value="Generar Comprobante" onclick="JavaScript:printPartOfPage('Div1');" class="btn btn-default primary">
+<script type="text/javascript">
+    $("#Div1").hide();
+
+    function printPartOfPage(elementId) {
+        var printContent = document.getElementById(elementId);
+        var windowUrl = 'Comprobante Colectivo de Vida';
+        var uniqueName = new Date();
+        var windowName = 'Comprobante' + uniqueName.getTime();
+        var printWindow = window.open(windowUrl, windowName, 'left=50000,top=50000,width=0,height=0');
+        printWindow.document.write(printContent.innerHTML);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }
+
+</script>
