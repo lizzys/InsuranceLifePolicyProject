@@ -1,0 +1,7 @@
+
+@{
+    ViewBag.Title = "PDF";
+    Layout = "~/Views/Shared/Admin/_LayoutAdmin.cshtml";
+}
+
+<h2>PDF</h2>
